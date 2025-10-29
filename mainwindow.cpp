@@ -9,10 +9,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setUpUI()
 {
+    // layout'ы
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
     auto *videoLayout = new QHBoxLayout();
     auto *buttonLayout = new QHBoxLayout();
+    auto *helpButtonsLayout = new QHBoxLayout();
     resize(1000, 800);
 
     originalLabel = new QLabel("");
@@ -24,9 +26,6 @@ void MainWindow::setUpUI()
     videoLayout->addWidget(originalLabel);
     videoLayout->addWidget(processedLabel);
 
-    startBtn = new QPushButton("Старт");
-    pauseBtn = new QPushButton("Пауза");
-    stopBtn = new QPushButton("Стоп");
     resetBtn = new QPushButton("Сброс графика");
     motionCheck = new QCheckBox("Отображать движение");
     motionCheck->setChecked(true);
@@ -40,21 +39,27 @@ void MainWindow::setUpUI()
     threadSlider->setValue(QThreadPool::globalInstance()->maxThreadCount());
     threadLabel = new QLabel(QString("Потоков: %1").arg(threadSlider->value()));
 
-    buttonLayout->addWidget(startBtn);
-    buttonLayout->addWidget(pauseBtn);
-    buttonLayout->addWidget(stopBtn);
-    buttonLayout->addWidget(resetBtn);
-    buttonLayout->addWidget(sourceBox);
-    buttonLayout->addWidget(motionCheck);
-    buttonLayout->addWidget(threadLabel);
-    buttonLayout->addWidget(threadSlider);
+    fileWidget = new FileModeWidget();
+    camWidget = new CameraModeWidget();
+    stack = new QStackedWidget();
+    stack->addWidget(fileWidget);
+    stack->addWidget(camWidget);
+    stack->setMinimumHeight(50);
+
+    helpButtonsLayout->addWidget(resetBtn);
+    helpButtonsLayout->addWidget(sourceBox);
+    helpButtonsLayout->addWidget(motionCheck);
+    helpButtonsLayout->addWidget(threadLabel);
+    helpButtonsLayout->addWidget(threadSlider);
 
 
-    //Графики
     layout->addLayout(videoLayout);
+    layout->addWidget(stack);
     layout->addLayout(buttonLayout);
+    layout->addLayout(helpButtonsLayout);
     setCentralWidget(central);
 
+    // --------Графики----------
     fpsSeries = new QLineSeries();
     motionSeries = new QLineSeries();
     fpsSeries->setName("FPS");
@@ -73,12 +78,9 @@ void MainWindow::setUpUI()
     setCentralWidget(central);
 
 
-    connect(startBtn, &QPushButton::clicked, this, &MainWindow::start_video);
-    connect(stopBtn, &QPushButton::clicked, this, &MainWindow::stop_video);
-    connect(pauseBtn, &QPushButton::clicked, this, &MainWindow::pause_video);
+    connect(sourceBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::switchMode);
     connect(resetBtn, &QPushButton::clicked, this, &MainWindow::reset_charts);
     connect(motionCheck, &QCheckBox::toggled, this, &MainWindow::toggle_motion_view);
-    connect(sourceBox, &QComboBox::currentIndexChanged, this, &MainWindow::source_changed);
     connect(threadSlider, &QSlider::valueChanged, this, [this](int val)
     {
         threadLabel->setText(QString("Потоков: %1").arg(val));
@@ -87,48 +89,71 @@ void MainWindow::setUpUI()
     connect(&frameTimer, &QTimer::timeout, this, &MainWindow::update_frame);
     connect(&chartTimer, &QTimer::timeout, this, &MainWindow::update_charts);
 
+    connect(camWidget, &CameraModeWidget::startCamera, this, &MainWindow::start_camera_processing);
+    connect(camWidget, &CameraModeWidget::stopCamera, this, &MainWindow::stop_video);
+    connect(fileWidget, &FileModeWidget::startRequested, this, &MainWindow::start_video);
+    connect(fileWidget, &FileModeWidget::stopRequested, this, &MainWindow::stop_video);
+    connect(fileWidget, &FileModeWidget::fileSelected, this, &MainWindow::start_video_processing);
+    connect(fileWidget, &FileModeWidget::pauseRequested, this, &MainWindow::pause_video);
+
+
     chartTimer.start(500);
+}
+
+void MainWindow::switchMode(int index)
+{
+    currentSourceMode = (index == 0) ? SourceType::File : SourceType::Camera;
+    stack->setCurrentIndex(index);
+    stop_video();
 }
 
 void MainWindow::start_video()
 {
-    if (!video.open("/Users/dmitry/Desktop/portfolio/videoEditor/Resources/test_video.mp4"))
-    {
-        QMessageBox::warning(this, "Ошибка", "Не удалось открыть видео");
-        return;
-    }
     isRunning = true;
     isPaused = false;
     prev_frame.release();
-    startBtn->setEnabled(false);
-    stopBtn->setEnabled(true);
     frameTimer.start(33);
+}
+
+
+void MainWindow::start_video_processing(const QString &path)
+{
+    if (currentSourceMode == SourceType::File)
+        source = FactoryUI::create(SourceType::File);
+
+    if (!source->open(path))
+    {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть видеофайл");
+    }
+    start_video();
+}
+
+void MainWindow::start_camera_processing()
+{
+    if (currentSourceMode == SourceType::Camera)
+    {
+        source = FactoryUI::create(SourceType::Camera);
+    }
+
+    if (!source || !this->source->isOpened())
+    {
+        QMessageBox::warning(this, "Ошибка", "Источник не открыт");
+        return;
+    }
+
+    start_video();
 }
 
 void MainWindow::stop_video()
 {
     isRunning = false;
     isPaused = true;
-    video.release();
-    startBtn->setEnabled(true);
-    stopBtn->setEnabled(false);
-
 }
 
-void MainWindow::source_changed(int i)
-{
-    switch (i)
-    {
-    case 0:
-
-    }
-
-}
 
 void MainWindow::pause_video()
 {
     isPaused.store(!isPaused.load());
-    pauseBtn->setText(isPaused ? "Продолжить" : "Пауза");
 
 }
 
@@ -153,11 +178,12 @@ void MainWindow::update_frame()
     cv::Mat frame;
     auto start = std::chrono::high_resolution_clock::now();
 
-    if (!video.read(frame))
+    if (!source->read(frame))
     {
         stop_video();
         return;
     }
+
     originalLabel->setPixmap(QPixmap::fromImage(matToImage(frame)).scaled(originalLabel->size(), Qt::KeepAspectRatio ));
     QtConcurrent::run([this, frame] {process_frame(frame);});
 

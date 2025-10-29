@@ -7,24 +7,11 @@ class FromCamUI : public AbstractUI
 {
 public:
     FromCamUI();
-    bool open(const QString &path = QString()) override
-    {
-        return cap.open(0);
-    }
-
-    bool readFrame(const cv::Mat &frame) override
-    {
-        return cap.read(frame);
-    }
-    bool isOpened() const override
-    {
-        return cap.isOpened();
-    }
-    void release() override
-    {
-        cap.release();
-    }
-
+    ~FromCamUI() override;
+    bool open(const QString &path = QString()) override;
+    bool read(cv::Mat &frame) override;
+    bool isOpened() const override;
+    void release() override;
 private:
     cv::VideoCapture cap;
 

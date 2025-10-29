@@ -7,26 +7,14 @@ class FromFileUI : public AbstractUI
 {
 public:
     FromFileUI();
-    bool open(const QString &path) override
-    {
-        return cap.open(path.toStdString());
-    }
+    ~FromFileUI() override;
 
-    bool readFrame(const cv::Mat &frame) override
-    {
-        return cap.read(frame);
-    }
-    bool isOpened() const override
-    {
-        return cap.isOpened();
-    }
-    void release() override
-    {
-        cap.release();
-    }
+    bool open(const QString &path) override;
+    bool read(cv::Mat &frame) override;
+    bool isOpened() const override;
+    void release() override;
 
 private:
     cv::VideoCapture cap;
 };
-
 #endif // FROMFILEUI_H

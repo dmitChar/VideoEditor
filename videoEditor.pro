@@ -30,7 +30,9 @@ macx {
 
 SOURCES += \
     abstractui.cpp \
+    cameramodewidget.cpp \
     factoryui.cpp \
+    filemodewidget.cpp \
     fromcamui.cpp \
     fromfileui.cpp \
     main.cpp \
@@ -38,7 +40,9 @@ SOURCES += \
 
 HEADERS += \
     abstractui.h \
+    cameramodewidget.h \
     factoryui.h \
+    filemodewidget.h \
     fromcamui.h \
     fromfileui.h \
     mainwindow.h

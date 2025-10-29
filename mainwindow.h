@@ -19,6 +19,11 @@
 #include <atomic>
 #include <deque>
 #include <QMessageBox>
+#include <QStackedWidget>
+
+#include "factoryui.h"
+#include "cameramodewidget.h"
+#include "filemodewidget.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -34,14 +39,17 @@ public:
     ~MainWindow();
 
 private slots:
-    void start_video();
+
+    void start_video_processing(const QString &path);
+    void start_camera_processing();
     void stop_video();
     void pause_video();
     void reset_charts();
     void update_frame();
     void update_charts();
     void toggle_motion_view(bool);
-    void source_changed(int);
+    void switchMode(int);
+    void start_video();
 
 private:
     QLabel *originalLabel;
@@ -59,20 +67,27 @@ private:
     QLineSeries *fpsSeries;
     QLineSeries *motionSeries;
 
-    cv::VideoCapture video;
+    //cv::VideoCapture video;
     QTimer frameTimer;
     QTimer chartTimer;
 
     std::atomic<bool> isRunning = false;
     std::atomic<bool> isPaused = false;
-    bool showMotion = true;
+    std::atomic<bool> showMotion = true;
     cv::Mat prev_frame;
     std::deque<double> fps_history;
     std::deque<double> motion_history;
 
+    SourceType currentSourceMode = SourceType::File;
+    std::unique_ptr<AbstractUI> source;
+    QStackedWidget *stack;
+    CameraModeWidget *camWidget;
+    FileModeWidget *fileWidget;
+
     void process_frame(const cv::Mat &frame);
     QImage matToImage(const cv::Mat &mat);
     void setUpUI();
+
 
 };
 #endif // MAINWINDOW_H
