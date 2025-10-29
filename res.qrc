@@ -1,1 +1,5 @@
-<RCC/>
+<RCC>
+    <qresource prefix="/video">
+        <file>Resources/test_video.mp4</file>
+    </qresource>
+</RCC>

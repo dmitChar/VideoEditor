@@ -1,6 +1,4 @@
-# Добавьте эти строки в НАЧАЛО файла:
-TARGET = videoEditor
-TEMPLATE = app
+
 
 QT += core gui concurrent charts
 
@@ -26,31 +24,23 @@ macx {
     PKGCONFIG += opencv4
 }
 
-macx {
-    # Определяем версию macOS
-    MACOSX_VERSION = $$system("sw_vers -productVersion")
-    isEmpty(MACOSX_VERSION) {
-        MACOSX_VERSION = 12.0
-    }
-
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = $$MACOSX_VERSION
-
-    # Явно указываем использовать системный SDK
-    QMAKE_APPLE_DEVICE_ARCHS = x86_64 arm64
-    QMAKE_MAC_SDK = macosx
-
-    # Флаги для игнорирования устаревших фреймворков
-    QMAKE_LFLAGS += -Wl,-w
-}
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    abstractui.cpp \
+    factoryui.cpp \
+    fromcamui.cpp \
+    fromfileui.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    abstractui.h \
+    factoryui.h \
+    fromcamui.h \
+    fromfileui.h \
     mainwindow.h
 
 FORMS +=

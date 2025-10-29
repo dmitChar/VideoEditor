@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
@@ -15,8 +16,8 @@
 #include <QLineSeries>
 #include <QValueAxis>
 #include <opencv2/opencv.hpp>
-//#include <atomic>
-//#include <deque>
+#include <atomic>
+#include <deque>
 #include <QMessageBox>
 
 
@@ -40,6 +41,7 @@ private slots:
     void update_frame();
     void update_charts();
     void toggle_motion_view(bool);
+    void source_changed(int);
 
 private:
     QLabel *originalLabel;
@@ -51,6 +53,7 @@ private:
     QSlider *threadSlider;
     QLabel *threadLabel;
     QCheckBox *motionCheck;
+    QComboBox *sourceBox;
 
     QChartView *chartView;
     QLineSeries *fpsSeries;

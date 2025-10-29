@@ -15,10 +15,12 @@ void MainWindow::setUpUI()
     auto *buttonLayout = new QHBoxLayout();
     resize(1000, 800);
 
-    originalLabel = new QLabel("Оригинал");
-    processedLabel = new QLabel("Обработано");
-    originalLabel->setMinimumSize(320, 240);
-    processedLabel->setMinimumSize(320, 240);
+    originalLabel = new QLabel("");
+    processedLabel = new QLabel("");
+    originalLabel->setMinimumSize(500, 350);
+    processedLabel->setMinimumSize(500, 350);
+    originalLabel->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    processedLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     videoLayout->addWidget(originalLabel);
     videoLayout->addWidget(processedLabel);
 
@@ -28,6 +30,10 @@ void MainWindow::setUpUI()
     resetBtn = new QPushButton("Сброс графика");
     motionCheck = new QCheckBox("Отображать движение");
     motionCheck->setChecked(true);
+    sourceBox = new QComboBox();
+
+    sourceBox->addItem("Из файла", 0);
+    sourceBox->addItem("Камера", 1);
 
     threadSlider = new QSlider(Qt::Horizontal);
     threadSlider->setRange(1, QThreadPool::globalInstance()->maxThreadCount());
@@ -38,9 +44,11 @@ void MainWindow::setUpUI()
     buttonLayout->addWidget(pauseBtn);
     buttonLayout->addWidget(stopBtn);
     buttonLayout->addWidget(resetBtn);
+    buttonLayout->addWidget(sourceBox);
     buttonLayout->addWidget(motionCheck);
     buttonLayout->addWidget(threadLabel);
     buttonLayout->addWidget(threadSlider);
+
 
     //Графики
     layout->addLayout(videoLayout);
@@ -70,6 +78,7 @@ void MainWindow::setUpUI()
     connect(pauseBtn, &QPushButton::clicked, this, &MainWindow::pause_video);
     connect(resetBtn, &QPushButton::clicked, this, &MainWindow::reset_charts);
     connect(motionCheck, &QCheckBox::toggled, this, &MainWindow::toggle_motion_view);
+    connect(sourceBox, &QComboBox::currentIndexChanged, this, &MainWindow::source_changed);
     connect(threadSlider, &QSlider::valueChanged, this, [this](int val)
     {
         threadLabel->setText(QString("Потоков: %1").arg(val));
@@ -83,7 +92,7 @@ void MainWindow::setUpUI()
 
 void MainWindow::start_video()
 {
-    if (!video.open("video.mp4"))
+    if (!video.open("/Users/dmitry/Desktop/portfolio/videoEditor/Resources/test_video.mp4"))
     {
         QMessageBox::warning(this, "Ошибка", "Не удалось открыть видео");
         return;
@@ -93,7 +102,7 @@ void MainWindow::start_video()
     prev_frame.release();
     startBtn->setEnabled(false);
     stopBtn->setEnabled(true);
-    frameTimer.start(30);
+    frameTimer.start(33);
 }
 
 void MainWindow::stop_video()
@@ -103,6 +112,16 @@ void MainWindow::stop_video()
     video.release();
     startBtn->setEnabled(true);
     stopBtn->setEnabled(false);
+
+}
+
+void MainWindow::source_changed(int i)
+{
+    switch (i)
+    {
+    case 0:
+
+    }
 
 }
 
@@ -152,6 +171,42 @@ void MainWindow::update_frame()
 
 void MainWindow::process_frame(const cv::Mat &mat)
 {
+    cv::Mat gray, diff, thresh;
+    cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(gray, gray,cv::Size(5,5), 0);
+
+    double motionLevel = 0.0;
+    cv::Mat frameCopy = mat.clone();
+
+    if (!prev_frame.empty())
+    {
+        cv::absdiff(gray, prev_frame, diff);
+        cv::threshold(diff, thresh, 30, 255, cv::THRESH_BINARY);
+        cv::erode(thresh, thresh, cv::Mat(), cv::Point(-1, -1), 2);
+        cv::dilate(thresh, thresh, cv::Mat(), cv::Point(-1, -1), 2);
+
+        motionLevel = cv::sum(thresh)[0] / (mat.cols * mat.rows * 255.0);
+
+        if (showMotion && motionLevel > 0.03)
+        {
+            std::vector<std::vector<cv::Point>> contours;
+            cv::findContours(thresh, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+            for (const auto &contour : contours)
+            {
+                if (cv::contourArea(contour) < 500) continue;
+                cv::Rect rect = cv::boundingRect(contour);
+                cv::rectangle(frameCopy, rect, cv::Scalar(0, 255, 0), 2);
+            }
+        }
+        QMetaObject::invokeMethod(this, [this, frameCopy]()
+        {
+            processedLabel->setPixmap(QPixmap::fromImage(matToImage(frameCopy).scaled(processedLabel->size(), Qt::KeepAspectRatio)));
+        });
+    }
+    prev_frame = gray;
+    motion_history.push_back(motionLevel);
+    if (motion_history.size() > 500) motion_history.pop_front();
 
 }
 
