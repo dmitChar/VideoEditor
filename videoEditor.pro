@@ -6,7 +6,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
 
-# OpenCV настройки (проверьте пути)
 macx {
     # Для Homebrew на Apple Silicon
     INCLUDEPATH += /opt/homebrew/opt/opencv/include/opencv4
@@ -31,21 +30,25 @@ macx {
 SOURCES += \
     abstractui.cpp \
     cameramodewidget.cpp \
+    cvutils.cpp \
     factoryui.cpp \
     filemodewidget.cpp \
     fromcamui.cpp \
     fromfileui.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    videoprocessor.cpp
 
 HEADERS += \
     abstractui.h \
     cameramodewidget.h \
+    cvutils.h \
     factoryui.h \
     filemodewidget.h \
     fromcamui.h \
     fromfileui.h \
-    mainwindow.h
+    mainwindow.h \
+    videoprocessor.h
 
 FORMS +=
 

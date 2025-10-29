@@ -5,6 +5,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setUpUI();
+    setUpProcessingThread();
 }
 
 void MainWindow::setUpUI()
@@ -34,11 +35,6 @@ void MainWindow::setUpUI()
     sourceBox->addItem("Из файла", 0);
     sourceBox->addItem("Камера", 1);
 
-    threadSlider = new QSlider(Qt::Horizontal);
-    threadSlider->setRange(1, QThreadPool::globalInstance()->maxThreadCount());
-    threadSlider->setValue(QThreadPool::globalInstance()->maxThreadCount());
-    threadLabel = new QLabel(QString("Потоков: %1").arg(threadSlider->value()));
-
     fileWidget = new FileModeWidget();
     camWidget = new CameraModeWidget();
     stack = new QStackedWidget();
@@ -49,8 +45,6 @@ void MainWindow::setUpUI()
     helpButtonsLayout->addWidget(resetBtn);
     helpButtonsLayout->addWidget(sourceBox);
     helpButtonsLayout->addWidget(motionCheck);
-    helpButtonsLayout->addWidget(threadLabel);
-    helpButtonsLayout->addWidget(threadSlider);
 
 
     layout->addLayout(videoLayout);
@@ -81,11 +75,7 @@ void MainWindow::setUpUI()
     connect(sourceBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::switchMode);
     connect(resetBtn, &QPushButton::clicked, this, &MainWindow::reset_charts);
     connect(motionCheck, &QCheckBox::toggled, this, &MainWindow::toggle_motion_view);
-    connect(threadSlider, &QSlider::valueChanged, this, [this](int val)
-    {
-        threadLabel->setText(QString("Потоков: %1").arg(val));
-        QThreadPool::globalInstance()->setMaxThreadCount(val);
-    });
+
     connect(&frameTimer, &QTimer::timeout, this, &MainWindow::update_frame);
     connect(&chartTimer, &QTimer::timeout, this, &MainWindow::update_charts);
 
@@ -100,18 +90,47 @@ void MainWindow::setUpUI()
     chartTimer.start(500);
 }
 
+void MainWindow::setUpProcessingThread()
+{
+    processingThread = new QThread();
+    processor = new VideoProcessor();
+    processor->moveToThread(processingThread);
+
+    //Отправка кадра на обработку
+    connect(this, &MainWindow::frameReady, processor, &VideoProcessor::processFrame);
+
+    //Получение кадра обратно
+    connect(processor, &VideoProcessor::frameProcessed, this, &MainWindow::updateProcessedFrame);
+
+    //Обновление флага showMotion в потоке
+    connect(this, &MainWindow::motionCheckToggled, processor, &VideoProcessor::setShowMotion);
+
+    //Очистка потока
+    connect(processingThread, &QThread::finished, processor, &VideoProcessor::deleteLater);
+
+    processingThread->start();
+}
+
+void MainWindow::toggle_motion_view(bool enabled)
+{
+    //отправляем сигнал в рабочий поток
+    emit motionCheckToggled(enabled);
+}
+
 void MainWindow::switchMode(int index)
 {
     currentSourceMode = (index == 0) ? SourceType::File : SourceType::Camera;
     stack->setCurrentIndex(index);
     stop_video();
+    this->originalLabel->setPixmap(QPixmap());
+    this->processedLabel->setPixmap(QPixmap());
 }
 
 void MainWindow::start_video()
 {
     isRunning = true;
     isPaused = false;
-    prev_frame.release();
+    //prev_frame.release();
     frameTimer.start(33);
 }
 
@@ -119,7 +138,9 @@ void MainWindow::start_video()
 void MainWindow::start_video_processing(const QString &path)
 {
     if (currentSourceMode == SourceType::File)
+    {
         source = FactoryUI::create(SourceType::File);
+    }
 
     if (!source->open(path))
     {
@@ -133,6 +154,7 @@ void MainWindow::start_camera_processing()
     if (currentSourceMode == SourceType::Camera)
     {
         source = FactoryUI::create(SourceType::Camera);
+        source->open(QString());
     }
 
     if (!source || !this->source->isOpened())
@@ -166,11 +188,6 @@ void MainWindow::reset_charts()
 
 }
 
-void MainWindow::toggle_motion_view(bool enabled)
-{
-    showMotion = enabled;
-}
-
 void MainWindow::update_frame()
 {
     if (!isRunning.load() || isPaused.load()) return;
@@ -184,58 +201,21 @@ void MainWindow::update_frame()
         return;
     }
 
-    originalLabel->setPixmap(QPixmap::fromImage(matToImage(frame)).scaled(originalLabel->size(), Qt::KeepAspectRatio ));
-    QtConcurrent::run([this, frame] {process_frame(frame);});
+    originalLabel->setPixmap(QPixmap::fromImage(CVUtils::matToImage(frame)).scaled(originalLabel->size(), Qt::KeepAspectRatio ));
+
+    //Отправка кадра в рабочий поток для обработки
+    emit frameReady(frame.clone());
 
     auto end = std::chrono::high_resolution_clock::now();
     double fps = 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     this->fps_history.push_back(fps);
     if (fps_history.size() > 600) fps_history.pop_front();
-
-
 }
 
-void MainWindow::process_frame(const cv::Mat &mat)
+void MainWindow::updateProcessedFrame(const QImage &image, double motionLevel)
 {
-    cv::Mat gray, diff, thresh;
-    cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(gray, gray,cv::Size(5,5), 0);
-
-    double motionLevel = 0.0;
-    cv::Mat frameCopy = mat.clone();
-
-    if (!prev_frame.empty())
-    {
-        cv::absdiff(gray, prev_frame, diff);
-        cv::threshold(diff, thresh, 30, 255, cv::THRESH_BINARY);
-        cv::erode(thresh, thresh, cv::Mat(), cv::Point(-1, -1), 2);
-        cv::dilate(thresh, thresh, cv::Mat(), cv::Point(-1, -1), 2);
-
-        motionLevel = cv::sum(thresh)[0] / (mat.cols * mat.rows * 255.0);
-
-        if (showMotion && motionLevel > 0.03)
-        {
-            std::vector<std::vector<cv::Point>> contours;
-            cv::findContours(thresh, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-            for (const auto &contour : contours)
-            {
-                if (cv::contourArea(contour) < 500) continue;
-                cv::Rect rect = cv::boundingRect(contour);
-                cv::rectangle(frameCopy, rect, cv::Scalar(0, 255, 0), 2);
-            }
-        }
-        QMetaObject::invokeMethod(this, [this, frameCopy]()
-        {
-            processedLabel->setPixmap(QPixmap::fromImage(matToImage(frameCopy).scaled(processedLabel->size(), Qt::KeepAspectRatio)));
-        });
-    }
-    prev_frame = gray;
-    motion_history.push_back(motionLevel);
-    if (motion_history.size() > 500) motion_history.pop_front();
-
+    processedLabel->setPixmap(QPixmap::fromImage(image).scaled(processedLabel->size(), Qt::KeepAspectRatio));
 }
-
 
 void MainWindow::update_charts()
 {
@@ -243,20 +223,10 @@ void MainWindow::update_charts()
 }
 
 
-QImage MainWindow::matToImage(const cv::Mat &mat)
-{
-    cv::Mat rgb;
-    if (mat.channels() == 3)
-        cv::cvtColor(mat, rgb, cv::COLOR_BGR2RGB);
-    else if (mat.channels() == 1)
-        cv::cvtColor(mat, rgb, cv::COLOR_GRAY2RGB);
-    else return QImage();
-    return QImage(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format_RGB888).copy();
-
-}
-
 MainWindow::~MainWindow()
 {
+    processingThread->quit();
+    processingThread->wait();
 
 }
 

@@ -5,7 +5,6 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
-#include <QSlider>
 #include <QCheckBox>
 #include <QVBoxLayout>
 #include <QTimer>
@@ -20,6 +19,7 @@
 #include <deque>
 #include <QMessageBox>
 #include <QStackedWidget>
+#include <videoprocessor.h>
 
 #include "factoryui.h"
 #include "cameramodewidget.h"
@@ -50,6 +50,7 @@ private slots:
     void toggle_motion_view(bool);
     void switchMode(int);
     void start_video();
+    void updateProcessedFrame(const QImage &image, double motionLevel);
 
 private:
     QLabel *originalLabel;
@@ -58,8 +59,6 @@ private:
     QPushButton *stopBtn;
     QPushButton *pauseBtn;
     QPushButton *resetBtn;
-    QSlider *threadSlider;
-    QLabel *threadLabel;
     QCheckBox *motionCheck;
     QComboBox *sourceBox;
 
@@ -74,9 +73,12 @@ private:
     std::atomic<bool> isRunning = false;
     std::atomic<bool> isPaused = false;
     std::atomic<bool> showMotion = true;
-    cv::Mat prev_frame;
+    //cv::Mat prev_frame;
     std::deque<double> fps_history;
     std::deque<double> motion_history;
+
+    QThread *processingThread;
+    VideoProcessor *processor;
 
     SourceType currentSourceMode = SourceType::File;
     std::unique_ptr<AbstractUI> source;
@@ -84,10 +86,15 @@ private:
     CameraModeWidget *camWidget;
     FileModeWidget *fileWidget;
 
-    void process_frame(const cv::Mat &frame);
-    QImage matToImage(const cv::Mat &mat);
     void setUpUI();
+    void setUpProcessingThread();
 
+signals:
+    // Сигнал для отправки кадра в рабочий поток
+    void frameReady(cv::Mat frame);
+
+    // Сигнал для обновления флага в рабочем потоке
+    void motionCheckToggled(bool show);
 
 };
 #endif // MAINWINDOW_H
