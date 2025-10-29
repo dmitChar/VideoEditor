@@ -33,6 +33,7 @@ SOURCES += \
     cvutils.cpp \
     factoryui.cpp \
     filemodewidget.cpp \
+    frameplotwidget.cpp \
     fromcamui.cpp \
     fromfileui.cpp \
     main.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
     cvutils.h \
     factoryui.h \
     filemodewidget.h \
+    frameplotwidget.h \
     fromcamui.h \
     fromfileui.h \
     mainwindow.h \

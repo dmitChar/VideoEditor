@@ -80,7 +80,7 @@ private:
     QThread *processingThread;
     VideoProcessor *processor;
 
-    SourceType currentSourceMode = SourceType::File;
+    SourceType currentSourceMode = SourceType::Camera;
     std::unique_ptr<AbstractUI> source;
     QStackedWidget *stack;
     CameraModeWidget *camWidget;

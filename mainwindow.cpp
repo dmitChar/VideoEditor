@@ -32,14 +32,15 @@ void MainWindow::setUpUI()
     motionCheck->setChecked(true);
     sourceBox = new QComboBox();
 
-    sourceBox->addItem("Из файла", 0);
-    sourceBox->addItem("Камера", 1);
+    sourceBox->addItem("Камера", 0);
+    sourceBox->addItem("Из файла", 1);
+
 
     fileWidget = new FileModeWidget();
     camWidget = new CameraModeWidget();
     stack = new QStackedWidget();
-    stack->addWidget(fileWidget);
     stack->addWidget(camWidget);
+    stack->addWidget(fileWidget);
     stack->setMinimumHeight(50);
 
     helpButtonsLayout->addWidget(resetBtn);
@@ -87,6 +88,7 @@ void MainWindow::setUpUI()
     connect(fileWidget, &FileModeWidget::pauseRequested, this, &MainWindow::pause_video);
 
 
+    start_camera_processing();
     chartTimer.start(500);
 }
 

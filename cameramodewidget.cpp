@@ -20,7 +20,9 @@ void CameraModeWidget::setUpUI()
     startBtn->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     stopBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    setLayout(buttonLayout);
+
     connect(startBtn, &QPushButton::clicked, this, &CameraModeWidget::startCamera);
     connect(stopBtn, &QPushButton::clicked, this, &CameraModeWidget::stopCamera);
-    setLayout(buttonLayout);
+
 }

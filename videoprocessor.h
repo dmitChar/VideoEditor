@@ -7,6 +7,7 @@
 #include <QThread>
 #include <opencv2/opencv.hpp>
 #include <cvutils.h>
+#include <QDebug>
 
 class VideoProcessor : public QObject
 {
@@ -20,6 +21,7 @@ private:
     cv::Mat prev_frame;
     bool showMotion = true;
     cv::Mat background;
+    cv::Ptr<cv::BackgroundSubtractorKNN> bgSubstr;
 
     // Вспомогательная функция (перенесена из mainwindow)
     QImage matToImage(const cv::Mat &mat);
