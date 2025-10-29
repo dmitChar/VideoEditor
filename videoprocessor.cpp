@@ -38,7 +38,7 @@ void VideoProcessor::processFrame(cv::Mat frame)
 
         for (const auto &contour : contours)
         {
-            qDebug() << cv::contourArea(contour);
+            //qDebug() << cv::contourArea(contour);
             if (cv::contourArea(contour) < 400) continue;
 
             cv::Rect rect = cv::boundingRect(contour);

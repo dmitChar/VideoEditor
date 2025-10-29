@@ -33,11 +33,13 @@ SOURCES += \
     cvutils.cpp \
     factoryui.cpp \
     filemodewidget.cpp \
+    fpscollector.cpp \
     frameplotwidget.cpp \
     fromcamui.cpp \
     fromfileui.cpp \
     main.cpp \
     mainwindow.cpp \
+    motionplotwidget.cpp \
     videoprocessor.cpp
 
 HEADERS += \
@@ -46,10 +48,12 @@ HEADERS += \
     cvutils.h \
     factoryui.h \
     filemodewidget.h \
+    fpscollector.h \
     frameplotwidget.h \
     fromcamui.h \
     fromfileui.h \
     mainwindow.h \
+    motionplotwidget.h \
     videoprocessor.h
 
 FORMS +=

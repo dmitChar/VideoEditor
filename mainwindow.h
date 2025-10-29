@@ -24,6 +24,8 @@
 #include "factoryui.h"
 #include "cameramodewidget.h"
 #include "filemodewidget.h"
+#include "fpscollector.h"
+#include "frameplotwidget.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -62,9 +64,7 @@ private:
     QCheckBox *motionCheck;
     QComboBox *sourceBox;
 
-    QChartView *chartView;
-    QLineSeries *fpsSeries;
-    QLineSeries *motionSeries;
+    FramePlotWidget *FPSPlot;
 
     //cv::VideoCapture video;
     QTimer frameTimer;
@@ -74,7 +74,6 @@ private:
     std::atomic<bool> isPaused = false;
     std::atomic<bool> showMotion = true;
     //cv::Mat prev_frame;
-    std::deque<double> fps_history;
     std::deque<double> motion_history;
 
     QThread *processingThread;
@@ -85,6 +84,7 @@ private:
     QStackedWidget *stack;
     CameraModeWidget *camWidget;
     FileModeWidget *fileWidget;
+    FPSCollector *fpsCount;
 
     void setUpUI();
     void setUpProcessingThread();

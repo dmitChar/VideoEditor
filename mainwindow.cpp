@@ -4,8 +4,29 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setUpUI();
+
     setUpProcessingThread();
+    fpsCount = new FPSCollector(this);
+    fpsCount->start();
+
+    FPSPlot = new FramePlotWidget(this);
+
+    setUpUI();
+
+    FPSPlot->start();
+    connect(fpsCount, &FPSCollector::fpsUpdated, this, [this](double fps) {
+        static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+        if (now - lastUpdate < 100) return; // максимум 10 обновлений/сек
+        lastUpdate = now;
+
+        QMetaObject::invokeMethod(FPSPlot, [this, fps]() {
+            FPSPlot->addPoint(fps);
+        }, Qt::QueuedConnection);
+    });
+
+
 }
 
 void MainWindow::setUpUI()
@@ -16,6 +37,7 @@ void MainWindow::setUpUI()
     auto *videoLayout = new QHBoxLayout();
     auto *buttonLayout = new QHBoxLayout();
     auto *helpButtonsLayout = new QHBoxLayout();
+    auto *plotsLayout = new QHBoxLayout();
     resize(1000, 800);
 
     originalLabel = new QLabel("");
@@ -47,30 +69,17 @@ void MainWindow::setUpUI()
     helpButtonsLayout->addWidget(sourceBox);
     helpButtonsLayout->addWidget(motionCheck);
 
+    plotsLayout->addWidget(FPSPlot);
+
 
     layout->addLayout(videoLayout);
     layout->addWidget(stack);
     layout->addLayout(buttonLayout);
     layout->addLayout(helpButtonsLayout);
+    layout->addLayout(plotsLayout);
     setCentralWidget(central);
 
-    // --------Графики----------
-    fpsSeries = new QLineSeries();
-    motionSeries = new QLineSeries();
-    fpsSeries->setName("FPS");
-    motionSeries->setName("Motion Intensity");
 
-    QChart *chart = new QChart();
-    chart->addSeries(fpsSeries);
-    chart->addSeries(motionSeries);
-    chart->createDefaultAxes();
-    chart->setTitle("Показатели видео");
-
-    chartView = new QChartView(chart);
-    chartView->setMinimumHeight(300);
-
-    layout->addWidget(chartView);
-    setCentralWidget(central);
 
 
     connect(sourceBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::switchMode);
@@ -183,10 +192,6 @@ void MainWindow::pause_video()
 
 void MainWindow::reset_charts()
 {
-    fpsSeries->clear();
-    motionSeries->clear();
-    fps_history.clear();
-    motion_history.clear();
 
 }
 
@@ -195,23 +200,18 @@ void MainWindow::update_frame()
     if (!isRunning.load() || isPaused.load()) return;
 
     cv::Mat frame;
-    auto start = std::chrono::high_resolution_clock::now();
-
     if (!source->read(frame))
     {
-        stop_video();
+        qDebug() << "Video stopped";
         return;
     }
+    fpsCount->addFrame();
 
     originalLabel->setPixmap(QPixmap::fromImage(CVUtils::matToImage(frame)).scaled(originalLabel->size(), Qt::KeepAspectRatio ));
 
     //Отправка кадра в рабочий поток для обработки
     emit frameReady(frame.clone());
 
-    auto end = std::chrono::high_resolution_clock::now();
-    double fps = 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    this->fps_history.push_back(fps);
-    if (fps_history.size() > 600) fps_history.pop_front();
 }
 
 void MainWindow::updateProcessedFrame(const QImage &image, double motionLevel)
