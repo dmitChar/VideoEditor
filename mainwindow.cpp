@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     fpsCount->start();
 
     FPSPlot = new FramePlotWidget(this);
+    motionPlot = new MotionPlotWidget();
 
     setUpUI();
 
@@ -25,6 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
             FPSPlot->addPoint(fps);
         }, Qt::QueuedConnection);
     });
+
+    motionPlot->start();
+
 
 
 }
@@ -70,6 +74,9 @@ void MainWindow::setUpUI()
     helpButtonsLayout->addWidget(motionCheck);
 
     plotsLayout->addWidget(FPSPlot);
+    plotsLayout->addWidget(motionPlot);
+    plotsLayout->setStretch(0, 1);
+    plotsLayout->setStretch(1, 1);
 
 
     layout->addLayout(videoLayout);
@@ -130,7 +137,7 @@ void MainWindow::toggle_motion_view(bool enabled)
 
 void MainWindow::switchMode(int index)
 {
-    currentSourceMode = (index == 0) ? SourceType::File : SourceType::Camera;
+    currentSourceMode = (index == 0) ? SourceType::Camera : SourceType::File;
     stack->setCurrentIndex(index);
     stop_video();
     this->originalLabel->setPixmap(QPixmap());
@@ -142,7 +149,9 @@ void MainWindow::start_video()
     isRunning = true;
     isPaused = false;
     //prev_frame.release();
-    frameTimer.start(33);
+    frameTimer.start(30);
+    FPSPlot->start();
+    motionPlot->start();
 }
 
 
@@ -181,6 +190,8 @@ void MainWindow::stop_video()
 {
     isRunning = false;
     isPaused = true;
+    FPSPlot->stop();
+    motionPlot->stop();
 }
 
 
@@ -192,6 +203,11 @@ void MainWindow::pause_video()
 
 void MainWindow::reset_charts()
 {
+    motionPlot->stop();
+    FPSPlot->stop();
+
+    motionPlot->start();
+    FPSPlot->start();
 
 }
 
@@ -217,6 +233,19 @@ void MainWindow::update_frame()
 void MainWindow::updateProcessedFrame(const QImage &image, double motionLevel)
 {
     processedLabel->setPixmap(QPixmap::fromImage(image).scaled(processedLabel->size(), Qt::KeepAspectRatio));
+
+
+    static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+    if (now - lastUpdate < 50) return; // максимум 10 обновлений/сек
+    lastUpdate = now;
+
+    QMetaObject::invokeMethod(FPSPlot, [this, motionLevel]()
+    {
+        motionPlot->addPoint(motionLevel);
+    }, Qt::QueuedConnection);
+
 }
 
 void MainWindow::update_charts()

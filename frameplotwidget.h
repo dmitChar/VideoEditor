@@ -2,7 +2,6 @@
 #define FRAMEPLOTWIDGET_H
 
 #include<QChartView>
-
 #include <QSplineSeries>
 #include <QValueAxis>
 #include <QElapsedTimer>
@@ -21,9 +20,11 @@ private:
     QSplineSeries *series;
     QElapsedTimer timer;
     QValueAxis *axisX, *axisY;
-    qint64 ySizeCup= 90;
-    const int maxPoints = 500;
-    int xSizeCup = 12000;
+
+    int ySizeCup= 45;
+    const float window = 10;
+    const int maxPoints = 200;
+
     std::atomic<bool> isRunning = false;
     QVector<double> fpsHistory;
 };

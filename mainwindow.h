@@ -26,6 +26,7 @@
 #include "filemodewidget.h"
 #include "fpscollector.h"
 #include "frameplotwidget.h"
+#include "motionplotwidget.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -65,6 +66,7 @@ private:
     QComboBox *sourceBox;
 
     FramePlotWidget *FPSPlot;
+    MotionPlotWidget *motionPlot;
 
     //cv::VideoCapture video;
     QTimer frameTimer;
@@ -74,7 +76,6 @@ private:
     std::atomic<bool> isPaused = false;
     std::atomic<bool> showMotion = true;
     //cv::Mat prev_frame;
-    std::deque<double> motion_history;
 
     QThread *processingThread;
     VideoProcessor *processor;

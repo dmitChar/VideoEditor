@@ -11,8 +11,8 @@ FramePlotWidget::FramePlotWidget(QWidget *parent)
     axisX = new QValueAxis();
     axisY = new QValueAxis();
 
-    axisY->setRange(15, 45);
-    axisX->setRange(0, 10); // 10 секунд
+    axisY->setRange(10, ySizeCup);
+    axisX->setRange(0, window); // 10 секунд
 
     chart->addSeries(series);
     chart->addAxis(axisX, Qt::AlignBottom);
@@ -27,6 +27,12 @@ FramePlotWidget::FramePlotWidget(QWidget *parent)
     setRenderHint(QPainter::Antialiasing);
     setChart(chart);
     setMinimumHeight(300);
+
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    setFrameShape(QFrame::NoFrame);
+    setContentsMargins(0, 0, 0, 0);
+    setMinimumWidth(400);
+
 }
 
 void FramePlotWidget::start()
@@ -54,14 +60,14 @@ bool FramePlotWidget::addPoint(float fps)
 
     if (fpsHistory.isEmpty()) return false;
 
-    double minY = *std::min_element(fpsHistory.begin(), fpsHistory.end());
+    // double minY = *std::min_element(fpsHistory.begin(), fpsHistory.end());
     double maxY = *std::max_element(fpsHistory.begin(), fpsHistory.end());
-    //axisY->setRange(std::max(0.0, minY - 5), maxY + 5);
+    axisY->setRange(10, maxY);
+
 
     double currentTime = timer.elapsed() / 1000.0;
     series->append(currentTime, fps);
 
-    double window = 10.0; // секунды
     double minX = std::max(0.0, currentTime - window);
     axisX->setRange(minX, currentTime);
 
