@@ -38,7 +38,6 @@
 - `videoprocessor.*` — обработка кадров в отдельном потоке, подсветка движений.
 - `factoryui.*`, `fromcamui.*`, `fromfileui.*`, `abstractui.*` — абстракция источников видео.
 - `frameplotwidget.*`, `motionplotwidget.*`, `fpscollector.*` — визуализация и сбор статистики.
-- `Resources/` — изображения и тестовое видео.
 
 
 
