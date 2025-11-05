@@ -6,6 +6,7 @@
 #include <QValueAxis>
 #include <QElapsedTimer>
 #include <atomic>
+#include <QDateTime>
 
 class FramePlotWidget : public QChartView
 {
@@ -27,6 +28,9 @@ private:
 
     std::atomic<bool> isRunning = false;
     QVector<double> fpsHistory;
+
+    qint64 lastUpdate;
+    qint64 now;
 };
 
 #endif // FRAMEPLOTWIDGET_H

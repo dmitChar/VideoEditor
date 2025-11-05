@@ -2,7 +2,7 @@
 
 FromCamUI::FromCamUI() {}
 
-FromCamUI::~FromCamUI() {release();}
+FromCamUI::~FromCamUI() {}
 
 
 bool FromCamUI::open(const QString &path)

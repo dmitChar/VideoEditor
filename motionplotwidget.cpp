@@ -65,7 +65,7 @@ bool MotionPlotWidget::addPoint(float motionRate)
     double minX = std::max(0.0, currentTime - window);
     axisX->setRange(minX, currentTime);
 
-    // while (!series->points().isEmpty() && series->at(0).x() < minX + window + 1)
+    // while (!series->points().isEmpty() && series->at(0).x() < minX + 1)
     // {
     //     series->remove(0);
     // }

@@ -3,7 +3,7 @@
 
 VideoProcessor::VideoProcessor(QObject *parent) : QObject(parent)
 {
-    bgSubstr = cv::createBackgroundSubtractorKNN(100, 40, 1);
+    bgSubstr = cv::createBackgroundSubtractorKNN(100, 100, 0);
 }
 
 VideoProcessor::~VideoProcessor()
