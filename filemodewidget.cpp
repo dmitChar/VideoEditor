@@ -12,8 +12,8 @@ void FileModeWidget::setUpUI()
     auto *buttonLayout = new QHBoxLayout();
 
     QPushButton *startBtn = new QPushButton("Старт");
-    QPushButton *stopBtn = new QPushButton("Стоп");
     QPushButton *pauseBtn = new QPushButton("Пауза");
+    QPushButton *stopBtn = new QPushButton("Сброс");
     QPushButton *chooseFileButton = new QPushButton("Выбрать файл");
 
     buttonLayout->addWidget(startBtn);

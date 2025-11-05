@@ -8,10 +8,8 @@ VideoProcessor::VideoProcessor(QObject *parent) : QObject(parent)
 
 VideoProcessor::~VideoProcessor()
 {
-    // Деструктор
 }
 
-// Этот слот будет выполняться в отдельном потоке
 void VideoProcessor::processFrame(cv::Mat frame)
 {
     if (frame.empty()) return;
@@ -52,7 +50,6 @@ void VideoProcessor::processFrame(cv::Mat frame)
     // Конвертируем в QImage
     QImage processedImage = CVUtils::matToImage(frameCopy);
 
-    // Отправляем результат обратно в GUI-поток
     emit frameProcessed(processedImage, motionLevel);
 }
 
@@ -60,5 +57,3 @@ void VideoProcessor::setShowMotion(bool show)
 {
     this->showMotion = show;
 }
-
-// Вспомогательная функция

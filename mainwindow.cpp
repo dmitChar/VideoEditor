@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
         static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
         qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-        if (now - lastUpdate < 100) return; // максимум 10 обновлений/сек
+        if (now - lastUpdate < 100) return;
         lastUpdate = now;
 
         QMetaObject::invokeMethod(FPSPlot, [this, fps]() {
@@ -238,7 +238,7 @@ void MainWindow::updateProcessedFrame(const QImage &image, double motionLevel)
     static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
     qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-    if (now - lastUpdate < 50) return; // максимум 10 обновлений/сек
+    if (now - lastUpdate < 50) return;
     lastUpdate = now;
 
     QMetaObject::invokeMethod(FPSPlot, [this, motionLevel]()

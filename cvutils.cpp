@@ -11,6 +11,5 @@ QImage CVUtils::matToImage(const cv::Mat &mat)
         cv::cvtColor(mat, rgb, cv::COLOR_GRAY2RGB);
     else return QImage();
 
-    // .copy() важен, т.к. данные `rgb` скоро выйдут из области видимости
     return QImage(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format_RGB888).copy();
 }
