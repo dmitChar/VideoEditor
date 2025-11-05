@@ -25,8 +25,6 @@
 - **Графики**: `FramePlotWidget` и `MotionPlotWidget` строят скользящие окна длиной ~10 секунд.
 - <img width="1146" height="944" alt="Снимок экрана 2025-11-05 в 16 33 27" src="https://github.com/user-attachments/assets/d161accf-4a50-4160-8bfd-54b7c0ff690f" />
 
-
-
 ### Требования
 
 - Qt 5.15+ или Qt 6 с модулями Widgets, Concurrent, Charts.
