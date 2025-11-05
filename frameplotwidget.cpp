@@ -33,8 +33,6 @@ FramePlotWidget::FramePlotWidget(QWidget *parent)
     setContentsMargins(0, 0, 0, 0);
     setMinimumWidth(400);
 
-    lastUpdate = QDateTime::currentMSecsSinceEpoch();
-
 }
 
 void FramePlotWidget::start()
@@ -57,51 +55,26 @@ bool FramePlotWidget::addPoint(float fps)
     if (!isRunning) return false;
 
     fpsHistory.push_back(fps);
+    if (fpsHistory.size() > maxPoints)
+        fpsHistory.pop_front();
+
     if (fpsHistory.isEmpty()) return false;
-    now = QDateTime::currentMSecsSinceEpoch();
 
-    // if (now - lastUpdate > window + 1 && fpsHistory.size() > maxPoints + 50)
-    // {
-    //     qDebug() << "Размер до удаления " << fpsHistory.size();
-    //     lastUpdate = now;
-    //     fpsHistory.erase(fpsHistory.begin(), fpsHistory.begin() + 50);
-    //     qDebug() << "Размер после удаления " << fpsHistory.size();
-    // }
-
-
-    double minY = *std::min_element(fpsHistory.begin(), fpsHistory.end());
+    // double minY = *std::min_element(fpsHistory.begin(), fpsHistory.end());
     double maxY = *std::max_element(fpsHistory.begin(), fpsHistory.end());
-    axisY->setRange(minY, maxY);
+    axisY->setRange(10, maxY);
 
 
     double currentTime = timer.elapsed() / 1000.0;
+    series->append(currentTime, fps);
+
     double minX = std::max(0.0, currentTime - window);
     axisX->setRange(minX, currentTime);
 
-
-    series->append(currentTime, fps);
-
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-
-    // if (now - lastUpdate > 15000)
+    // while (!series->points().isEmpty() && series->at(0).x() < minX + window + 1)
     // {
-    //     lastUpdate = now;
-    //     int removeCount = 0;
-    //     auto points = series->points();
-
-    //     for (auto &point : points)
-    //     {
-    //         if (point.x() < minX)
-    //             removeCount++;
-    //     }
-
-    //     if (removeCount > 0)
-    //     {
-    //         series->removePoints(0, removeCount);
-    //         qDebug() << "Удалены " << removeCount <<"элементов";
-    //     }
+    //     series->remove(0);
     // }
-
 
     return true;
 }

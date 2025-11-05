@@ -15,15 +15,16 @@ MainWindow::MainWindow(QWidget *parent)
     setUpUI();
 
     FPSPlot->start();
-    connect(fpsCount, &FPSCollector::fpsUpdated, this, [this](double fps)
-    {
+    connect(fpsCount, &FPSCollector::fpsUpdated, this, [this](double fps) {
         static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
         qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-        if (now - lastUpdate < 80) return; // интервал между обновлениями (в мс)
+        if (now - lastUpdate < 100) return; // максимум 10 обновлений/сек
         lastUpdate = now;
 
-        FPSPlot->addPoint(fps);
+        QMetaObject::invokeMethod(FPSPlot, [this, fps]() {
+            FPSPlot->addPoint(fps);
+        }, Qt::QueuedConnection);
     });
 
     motionPlot->start();
@@ -233,13 +234,17 @@ void MainWindow::updateProcessedFrame(const QImage &image, double motionLevel)
 {
     processedLabel->setPixmap(QPixmap::fromImage(image).scaled(processedLabel->size(), Qt::KeepAspectRatio));
 
+
     static qint64 lastUpdate = QDateTime::currentMSecsSinceEpoch();
     qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-    if (now - lastUpdate < 50) return;
+    if (now - lastUpdate < 50) return; // максимум 10 обновлений/сек
     lastUpdate = now;
 
-    motionPlot->addPoint(motionLevel);
+    QMetaObject::invokeMethod(FPSPlot, [this, motionLevel]()
+    {
+        motionPlot->addPoint(motionLevel);
+    }, Qt::QueuedConnection);
 
 }
 
